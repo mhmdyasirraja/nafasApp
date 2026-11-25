@@ -1,0 +1,60 @@
+/* Token diambil dari mockup "nafas." (di-sample dari pixel). Di-import dari app.css. */
+@theme {
+    --color-sidebar: #113c43;
+    --color-sidebar-hover: #2b5a60;
+    --color-canvas: #f3f7f8;
+    --color-ink: #1b2a31;
+    --color-muted: #5f7078;
+    --color-brand: #0f7f7a;
+    --color-aman: #24855c;
+    --color-waspada: #a56b0a;
+    --color-bahaya: #c53e42;
+    --color-sensor: #6b4fa3;
+}
+
+/*
+ * Warna "status" berganti lewat satu atribut: <div data-status="bahaya">.
+ * Semua komponen cukup pakai text-status / bg-status-soft; JS hanya mengubah atribut itu.
+ * Default (offline / belum ada data) = abu netral.
+ */
+@theme inline {
+    --color-status: var(--status-fg);
+    --color-status-soft: var(--status-bg);
+}
+
+:root {
+    --status-fg: #5f7078;
+    --status-bg: #eef2f3;
+}
+[data-status='aman'] { --status-fg: var(--color-aman); --status-bg: #edf8f0; }
+[data-status='waspada'] { --status-fg: var(--color-waspada); --status-bg: #fff6e5; }
+[data-status='bahaya'] { --status-fg: var(--color-bahaya); --status-bg: #fff0f1; }
+[data-status='sensor_error'] { --status-fg: var(--color-sensor); --status-bg: #f3effa; }
+
+@layer components {
+    .card {
+        @apply rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm sm:p-6;
+    }
+    .chip {
+        @apply inline-flex items-center gap-1.5 rounded-full bg-brand/10 px-3 py-1 text-xs font-medium text-brand;
+    }
+}
+
+/* Chip penanda "koneksi ke server putus" (diset JS saat polling gagal). */
+.chip[data-lost='true'] {
+    background: #fff0f1;
+    color: var(--color-bahaya);
+}
+
+/*
+ * Gauge: busur 270°, r=42 => keliling 263.89, panjang busur 197.92.
+ * JS hanya menulis --frac (0..1); CSS yang menggambar & menganimasikan.
+ */
+.gauge-value {
+    stroke-dasharray: calc(var(--frac, 0) * 197.92) 263.89;
+    transition: stroke-dasharray 0.6s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .gauge-value { transition: none; }
+}
