@@ -50,10 +50,7 @@ final class RiwayatCo
 
         return [
             'rentang' => $rentang,
-            'thresholds' => AmbangBatas::whereIn('nama_level', ['waspada', 'bahaya'])
-                ->pluck('batas_min_ppm', 'nama_level')
-                ->map(fn ($v) => (float) $v)
-                ->all(),
+            'thresholds' => AmbangBatas::thresholds(),
             'points' => $points->values()->all(),
         ];
     }

@@ -154,7 +154,7 @@
         <section class="card">
             <div class="flex items-center justify-between">
                 <h2 class="font-medium">Riwayat CO</h2>
-                <span class="text-sm text-muted" title="Segera hadir">Lihat riwayat ↗</span>
+                <a href="{{ route('riwayat', ['perangkat' => $perangkat->id]) }}" class="text-sm font-medium text-brand hover:underline">Lihat riwayat ↗</a>
             </div>
 
             <div class="mt-4 flex flex-wrap items-center justify-between gap-3">

@@ -7,6 +7,7 @@ use App\Enums\TampilanStatus;
 use App\Models\DataSensor;
 use App\Models\Notifikasi;
 use App\Models\Perangkat;
+use App\Support\Ppm;
 
 /**
  * Satu-satunya tempat yang menerjemahkan data mentah -> apa yang ditampilkan dashboard.
@@ -88,13 +89,9 @@ final class DashboardSnapshot
         return ! in_array($state, [TampilanStatus::Offline, TampilanStatus::BelumAdaData], true);
     }
 
-    /**
-     * Dibulatkan KE BAWAH: 17,9 ppm berstatus Aman (< 18) tidak boleh tampil "18".
-     * Selisih <1 ppm jauh di bawah akurasi MQ-7 yang belum dikalibrasi.
-     */
     private function displayPpm(float $ppm): string
     {
-        return (string) (int) floor($ppm);
+        return Ppm::display($ppm);
     }
 
     /** @return list<array{title: string, detail: string, time: string, level: string}> */

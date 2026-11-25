@@ -116,22 +116,17 @@ document.addEventListener('visibilitychange', () => {
 
 /* ---------- grafik ---------- */
 
-let chart = null;
+let chartApi = null;
 let range = '1j';
 
-const fmtTime = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: cfg.tz });
-const fmtFull = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: cfg.tz });
-
-const statusColor = () => cssVar('--status-fg', root) || '#5f7078';
+const statusColor = () => getComputedStyle(root).getPropertyValue('--status-fg').trim() || '#5f7078';
 
 function syncChartColor() {
-    if (!chart) return;
-    chart.data.datasets[0].borderColor = statusColor();
-    chart.update('none');
+    chartApi?.setColor(statusColor());
 }
 
 async function loadChart() {
-    if (!chart) return;
+    if (!chartApi) return;
 
     try {
         const res = await fetch(`${cfg.riwayatUrl}?rentang=${range}`, {
@@ -142,15 +137,8 @@ async function loadChart() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const { points, thresholds } = await res.json();
-        const data = points.map(([x, y]) => ({ x, y }));
-        const span = data.length ? [data[0].x, data[data.length - 1].x] : [Date.now() - 3600000, Date.now()];
-        const line = (v) => span.map((x) => ({ x, y: v ?? null }));
-
-        chart.data.datasets[0].data = data;
-        chart.data.datasets[1].data = line(thresholds.waspada);
-        chart.data.datasets[2].data = line(thresholds.bahaya);
-        chart.options.scales.y.suggestedMax = Math.max((thresholds.bahaya ?? 35) * 1.5, ...data.map((p) => p.y * 1.1));
-        chart.update('none');
+        chartApi.setWithDate(range === '7h');
+        chartApi.setData(points, thresholds);
     } catch {
         // Biarkan grafik lama; status koneksi sudah ditangani poll().
     }
@@ -161,53 +149,8 @@ async function initChart() {
     if (!canvas) return;
 
     // Dimuat dinamis: halaman lain (login dll) tidak menanggung bundle Chart.js.
-    const [{ default: Chart }, { default: zoom }] = await Promise.all([
-        import('chart.js/auto'),
-        import('chartjs-plugin-zoom'),
-    ]);
-    Chart.register(zoom);
-
-    const dashed = (label, color) => ({
-        label, data: [], borderColor: color, borderDash: [6, 5], borderWidth: 1, pointRadius: 0, pointHitRadius: 0, fill: false,
-    });
-
-    chart = new Chart(canvas, {
-        type: 'line',
-        data: {
-            datasets: [
-                { label: cfg.deviceName, data: [], borderColor: statusColor(), borderWidth: 2.5, tension: 0.35, pointRadius: 0, pointHoverRadius: 4, fill: false },
-                dashed('Ambang waspada', cssVar('--color-waspada') || '#a56b0a'),
-                dashed('Ambang bahaya', cssVar('--color-bahaya') || '#c53e42'),
-            ],
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            interaction: { mode: 'nearest', axis: 'x', intersect: false },
-            scales: {
-                x: {
-                    type: 'linear',
-                    grid: { display: false },
-                    ticks: { maxTicksLimit: 5, callback: (v) => (range === '7h' ? fmtFull : fmtTime).format(v) },
-                },
-                y: { beginAtZero: true, ticks: { maxTicksLimit: 4 }, grid: { color: '#e8eef0' }, border: { display: false } },
-            },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    filter: (item) => item.datasetIndex === 0,
-                    callbacks: { title: (items) => fmtFull.format(items[0].parsed.x), label: (item) => `${item.parsed.y} ppm` },
-                },
-                zoom: {
-                    pan: { enabled: true, mode: 'x' },
-                    zoom: { wheel: { enabled: false }, pinch: { enabled: true }, mode: 'x' }, // wheel off: jangan bajak scroll halaman
-                    limits: { x: { min: 'original', max: 'original' } },
-                },
-            },
-        },
-    });
-
+    const { createCoChart } = await import('./co-chart');
+    chartApi = await createCoChart(canvas, { label: cfg.deviceName, tz: cfg.tz, color: statusColor() });
     await loadChart();
 }
 
@@ -215,13 +158,13 @@ root.querySelectorAll('[data-range]').forEach((btn) => {
     btn.addEventListener('click', () => {
         range = btn.dataset.range;
         root.querySelectorAll('[data-range]').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
-        chart?.resetZoom('none');
+        chartApi?.reset('none');
         loadChart();
     });
 });
-root.querySelector('[data-zoom="in"]')?.addEventListener('click', () => chart?.zoom(1.3));
-root.querySelector('[data-zoom="out"]')?.addEventListener('click', () => chart?.zoom(0.77));
-root.querySelector('[data-zoom="reset"]')?.addEventListener('click', () => chart?.resetZoom());
+root.querySelector('[data-zoom="in"]')?.addEventListener('click', () => chartApi?.zoomIn());
+root.querySelector('[data-zoom="out"]')?.addEventListener('click', () => chartApi?.zoomOut());
+root.querySelector('[data-zoom="reset"]')?.addEventListener('click', () => chartApi?.reset());
 
 /* ---------- start ---------- */
 

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Perangkat;
+use App\Http\Controllers\Concerns\ResolvesPerangkat;
 use App\Services\DashboardSnapshot;
 use App\Services\RiwayatCo;
 use Illuminate\Http\JsonResponse;
@@ -12,12 +12,11 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    use ResolvesPerangkat;
+
     public function index(Request $request, DashboardSnapshot $snapshot): View
     {
-        $devices = $request->user()->perangkat()->orderBy('nama_perangkat')->get(['id', 'nama_perangkat']);
-
-        $selectedId = $request->integer('perangkat') ?: $devices->first()?->id;
-        $perangkat = $selectedId ? $this->ownedDevice($request, $selectedId) : null;
+        [$devices, $perangkat] = $this->devicesWithSelection($request);
 
         return view('dashboard.index', [
             'perangkatList' => $devices,
@@ -40,14 +39,5 @@ class DashboardController extends Controller
         return response()
             ->json($riwayat->forRange($this->ownedDevice($request, $perangkat), $data['rentang']))
             ->header('Cache-Control', 'no-store');
-    }
-
-    /**
-     * Selalu di-scope lewat relasi milik user: perangkat orang lain => 404 (bukan 403),
-     * jadi tidak membocorkan keberadaan ID dan tidak ada IDOR.
-     */
-    private function ownedDevice(Request $request, int $id): Perangkat
-    {
-        return $request->user()->perangkat()->findOrFail($id);
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\RiwayatController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -8,6 +9,7 @@ Route::redirect('/', '/dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/riwayat', [RiwayatController::class, 'index'])->name('riwayat');
 
     // Polling tiap 5 dtk (+ grafik) = ~15 req/mnt per tab. Batas 120/mnt aman untuk beberapa tab.
     Route::middleware('throttle:120,1')->group(function () {

@@ -18,4 +18,19 @@ class AmbangBatas extends Model
             'aksi_buzzer' => 'boolean',
         ];
     }
+
+    /**
+     * Batas bawah (inklusif) level yang punya ambang: ['waspada' => 18.0, 'bahaya' => 35.1].
+     * Satu sumber kebenaran untuk grafik, ringkasan, dan filter status.
+     *
+     * @return array<string, float>
+     */
+    public static function thresholds(): array
+    {
+        return static::query()
+            ->whereIn('nama_level', ['waspada', 'bahaya'])
+            ->pluck('batas_min_ppm', 'nama_level')
+            ->map(fn ($v) => (float) $v)
+            ->all();
+    }
 }

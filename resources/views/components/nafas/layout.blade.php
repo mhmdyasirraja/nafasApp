@@ -1,7 +1,12 @@
-@props(['title' => 'Dashboard', 'perangkat' => null])
+@props(['title' => 'Dashboard', 'perangkat' => null, 'active' => 'dashboard'])
 @php
     $user = auth()->user();
     $initials = collect(explode(' ', trim($user?->name ?? 'U')))->filter()->map(fn ($p) => mb_strtoupper(mb_substr($p, 0, 1)))->take(2)->implode('');
+    $deviceQuery = array_filter(['perangkat' => $perangkat?->id]);
+    $nav = [
+        ['dashboard', 'grid', 'Dashboard', route('dashboard', $deviceQuery)],
+        ['riwayat', 'trend', 'Riwayat', route('riwayat', $deviceQuery)],
+    ];
     $today = now()->timezone(config('nafas.display_timezone'))->locale('id')->translatedFormat('l, j F Y');
 @endphp
 <!DOCTYPE html>
@@ -28,13 +33,13 @@
         </div>
 
         <nav class="mt-8 space-y-1 text-sm" aria-label="Menu utama">
-            <a href="{{ route('dashboard') }}" aria-current="page" class="flex items-center gap-3 rounded-lg bg-sidebar-hover px-3 py-2.5 font-medium">
-                <x-nafas.icon name="grid"/> Dashboard
-            </a>
-            {{-- Halaman berikutnya (SCS-09 Riwayat, notifikasi). Sementara non-aktif. --}}
-            <span aria-disabled="true" title="Segera hadir" class="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-white/50">
-                <x-nafas.icon name="trend"/> Riwayat
-            </span>
+            @foreach ($nav as [$key, $icon, $label, $url])
+                <a href="{{ $url }}" @if ($active === $key) aria-current="page" @endif
+                   class="flex items-center gap-3 rounded-lg px-3 py-2.5 {{ $active === $key ? 'bg-sidebar-hover font-medium' : 'text-white/80 hover:bg-white/5' }}">
+                    <x-nafas.icon :name="$icon"/> {{ $label }}
+                </a>
+            @endforeach
+            {{-- Halaman berikutnya (notifikasi). Sementara non-aktif. --}}
             <span aria-disabled="true" title="Segera hadir" class="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-white/50">
                 <x-nafas.icon name="bell"/> Pemberitahuan
             </span>
